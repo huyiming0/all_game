@@ -1,0 +1,24 @@
+{
+  "ver": "1.1.2",
+  "uuid": "8bda896e-b8a0-4b00-8f40-40fcfab22db3",
+  "isBundle": true,
+  "bundleName": "MargeBallBundle",
+  "priority": 1,
+  "compressionType": {
+    "web-mobile": "default",
+    "bytedance": "merge_all_json"
+  },
+  "optimizeHotUpdate": {
+    "web-mobile": false,
+    "bytedance": false
+  },
+  "inlineSpriteFrames": {
+    "web-mobile": false,
+    "bytedance": false
+  },
+  "isRemoteBundle": {
+    "web-mobile": false,
+    "bytedance": false
+  },
+  "subMetas": {}
+}
