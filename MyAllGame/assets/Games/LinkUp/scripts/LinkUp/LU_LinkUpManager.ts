@@ -23,8 +23,8 @@ export default class LU_LinkUpManager extends cc.Component {
     @property(cc.Node)
     LinkUpCenter: cc.Node = null;
 
-    public rows: number = 6;
-    public columns: number = 6;
+    public rows: number = 20;
+    public columns: number = 20;
     public lerp: number = 10;
 
     public allNodes: Array<Array<LU_LinkUpType>> = null;
@@ -35,6 +35,8 @@ export default class LU_LinkUpManager extends cc.Component {
     private cardHeight: number = 60;
 
     private clicdIndex: number = 0;
+    private arr1: Array<string>;
+    private arr2: Array<Array<string>>;
 
     onLoad() {
         this.init();
@@ -138,50 +140,85 @@ export default class LU_LinkUpManager extends cc.Component {
         let start = card1.cardPos;
         let end = card2.cardPos;
         //初始方向
-        return this.createLink([start[0] - 1, start[1]], end, Direction.none, Direction.up, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
-            || this.createLink([start[0] + 1, start[1]], end, Direction.none, Direction.down, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
-            || this.createLink([start[0], start[1] - 1], end, Direction.none, Direction.left, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
-            || this.createLink([start[0], start[1] + 1], end, Direction.none, Direction.right, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
+        this.arr1 = new Array<string>();
+        this.arr2 = new Array<Array<string>>();
+        let isok1 = this.createLink(start, [start[0] - 1, start[1]], end, Direction.none, Direction.up, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
+        let isok2 = this.createLink(start, [start[0] + 1, start[1]], end, Direction.none, Direction.down, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
+        let isok3 = this.createLink(start, [start[0], start[1] - 1], end, Direction.none, Direction.left, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
+        let isok4 = this.createLink(start, [start[0], start[1] + 1], end, Direction.none, Direction.right, 0, new Array<boolean>((this.rows + 2) * (this.columns + 2)))
+        console.log(this.arr1);
+        console.log(this.arr2);
+        return isok1 || isok2 || isok3 || isok4;
     }
     allArr: Array<Array<number>> = new Array<Array<number>>();
-    createLink(start: number[], end: number[], oldDir: Direction, newdir: Direction, time: number, pathArr) {
+    @property(cc.Node)
+    test: cc.Node = null;
+    createLink(last: number[], start: number[], end: number[], oldDir: Direction, newdir: Direction, time: number, pathArr) {
         if (start[0] < 0 || start[0] > this.columns + 1 || start[1] < 0 || start[1] > this.rows + 1) {
             return false;
         }
+        let num = start[0] * (this.columns + 1) + start[1] + 1;
+        if (pathArr[num]) {
+            return false;
+        }
+        pathArr[num] = true;
+        if (this.allNodes[start[0]][start[1]] != 0) {
+            if (start[0] == end[0] && start[1] == end[1]) {
+                let t = this.creattime(oldDir, time, newdir, last, start);
+                if (t.isTime) {
+                    time = t.time;
+                } else {
+                    pathArr[num] = false;
+                    return false;
+                }
+                let arr = new Array<string>();
+                for (let i = 0; i < this.arr1.length; i++) {
+                    arr.push(this.arr1[i]);
+                }
+                this.arr2.push(arr);
+                return true;
+            } else {
+                pathArr[num] = false;
+                return false;
+            }
+        }
+        let t = this.creattime(oldDir, time, newdir, last, start);
+        if (t.isTime) {
+            time = t.time;
+        } else {
+            pathArr[num] = false;
+            return false;
+        }
+
+        let value1 = this.createLink(start, [start[0] - 1, start[1]], end, newdir, Direction.up, time, pathArr)
+        let value2 = this.createLink(start, [start[0] + 1, start[1]], end, newdir, Direction.down, time, pathArr)
+        let value3 = this.createLink(start, [start[0], start[1] - 1], end, newdir, Direction.left, time, pathArr)
+        let value4 = this.createLink(start, [start[0], start[1] + 1], end, newdir, Direction.right, time, pathArr);
+        return value1 || value2 || value3 || value4;
+    }
+
+
+    private creattime(oldDir: Direction, time: number, newdir: Direction, last: number[], start: number[]) {
         if (oldDir == Direction.none) {
             time = 0;
         } else {
             if (oldDir != newdir) {
                 time++;
+                if (time >= 3) {
+                    this.arr1.length = 0;
+                    return { isTime: false, time: time };
+                }
+                let lerp = last[0] + "," + last[1] + '/' + oldDir + '=>' + start[0] + "," + start[1] + "/" + newdir;
+                this.arr1.push(lerp);
             }
         }
-        if (time >= 3) {
-            return false;
-        }
-        if (start[0] == end[0] && start[1] == end[1]) {
-            return true;
-        }
-        if (this.allNodes[start[0]][start[1]] != 0) {
-            return false;
-        }
-        let num = start[0] * (this.columns + 2) + start[1] + 1;
-        if (pathArr[num]) {
-            return false;
-        }
-        pathArr[num] = true;
-        console.log(num);
-
-        return this.createLink([start[0] - 1, start[1]], end, newdir, Direction.up, time, pathArr)
-            || this.createLink([start[0] + 1, start[1]], end, newdir, Direction.down, time, pathArr)
-            || this.createLink([start[0], start[1] - 1], end, newdir, Direction.left, time, pathArr)
-            || this.createLink([start[0], start[1] + 1], end, newdir, Direction.right, time, pathArr);
+        return { isTime: true, time: time };
     }
-
 }
 enum Direction {
-    none = 0,
-    up,
-    down,
-    left,
-    right,
+    none = 'none',
+    up = 'up',
+    down = 'down',
+    left = 'left',
+    right = 'right',
 }
